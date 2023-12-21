@@ -31,33 +31,33 @@ async function run() {
         const taskCollection = client.db('todoApp').collection('tasks');
 
         // jwt related api
-        // app.post("/jwt", async (req, res) => {
-        //     const user = req.body;
-        //     const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-        //         expiresIn: "1hr",
-        //     });
-        //     res.send({ token });
-        // });
+        app.post("/jwt", async (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+                expiresIn: "1hr",
+            });
+            res.send({ token });
+        });
 
-        // app.post('/logout', async (req, res) => {
-        //     const user = req.body;
-        //     console.log('logging out', user);
-        //     res.clearCookie('token', { maxAge: 0 }).send({ success: true });
-        // });
+        app.post('/logout', async (req, res) => {
+            const user = req.body;
+            console.log('logging out', user);
+            res.clearCookie('token', { maxAge: 0 }).send({ success: true });
+        });
 
-        // const verifyToken = (req, res, next) => {
-        //     const token = req?.cookies?.token;
-        //     if (!token) {
-        //         return res.status(401).send({ message: 'unauthorized access' });
-        //     }
-        //     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-        //         if (err) {
-        //             return res.status(401).send({ message: 'unauthorized access' });
-        //         }
-        //         req.user = decoded;
-        //         next();
-        //     });
-        // };
+        const verifyToken = (req, res, next) => {
+            const token = req?.cookies?.token;
+            if (!token) {
+                return res.status(401).send({ message: 'unauthorized access' });
+            }
+            jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+                if (err) {
+                    return res.status(401).send({ message: 'unauthorized access' });
+                }
+                req.user = decoded;
+                next();
+            });
+        };
 
         app.get('/tasks', async (req, res) => {
             try {
@@ -67,6 +67,31 @@ async function run() {
                 console.error('Error fetching tasks:', error);
                 res.status(500).send({ message: 'Internal Server Error' });
             }
+        });
+
+        app.post('/tasks', async (req, res) => {
+            try {
+                const taskData = req.body;
+                taskData.status = 'todo';
+                const result = await taskCollection.insertOne(taskData);
+
+                res.send(result)
+            } catch (error) {
+                console.error('Error adding task:', error);
+                res.status(500).json({ success: false, error: 'Internal Server Error' });
+            }
+        });
+
+        app.put('/tasks/updateOrder', async (req, res) => {
+
+            const updatedTasks = req.body.tasks;
+            const promises = updatedTasks.map(async (task) => {
+                await taskCollection.updateOne({ _id: ObjectId(task._id) }, { $set: { status: task.status } });
+            });
+
+            await Promise.all(promises);
+
+            res.status(200).send({ message: 'Task order updated successfully.' });
         });
 
         await client.db('admin').command({ ping: 1 });
