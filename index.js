@@ -24,7 +24,7 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
-        await client.connect();
+        // await client.connect();
 
         const taskCollection = client.db('todoApp').collection('tasks');
 
@@ -104,8 +104,8 @@ async function run() {
         })
 
 
-        await client.db('admin').command({ ping: 1 });
-        console.log('Pinged your deployment. You successfully connected to MongoDB!');
+        // await client.db('admin').command({ ping: 1 });
+        // console.log('Pinged your deployment. You successfully connected to MongoDB!');
     } finally {
         // Ensure that the client will close when you finish/error
         // await client.close();
@@ -115,7 +115,7 @@ async function run() {
 run().catch(console.dir);
 
 app.get('/', (req, res) => {
-    res.send('Server is running');
+    res.send('Todo App is running');
 });
 
 app.listen(port, () => {
