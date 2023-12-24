@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId  } = require('mongodb');
 require('dotenv').config();
 
 const app = express();
@@ -21,8 +21,6 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     }
 });
-
-
 
 async function run() {
     try {
@@ -82,17 +80,29 @@ async function run() {
             }
         });
 
-        app.put('/tasks/updateOrder', async (req, res) => {
-
-            const updatedTasks = req.body.tasks;
-            const promises = updatedTasks.map(async (task) => {
-                await taskCollection.updateOne({ _id: ObjectId(task._id) }, { $set: { status: task.status } });
-            });
-
-            await Promise.all(promises);
-
-            res.status(200).send({ message: 'Task order updated successfully.' });
+        // status update
+        app.patch("/updateStatus/:id", async (req, res) => {
+            const id = req.params.id;
+            // console.log(id);
+            const filter = { _id: new ObjectId(id) };
+            const getStatus = req.body?.status;
+            const updateStatus = {
+                $set: {
+                    status: getStatus
+                }
+            };
+            const result = await taskCollection.updateOne(filter, updateStatus);
+            res.send(result);
         });
+
+        // Delete post 
+        app.delete('/tasks/delete/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await taskCollection.deleteOne(query);
+            res.send(result);
+        })
+
 
         await client.db('admin').command({ ping: 1 });
         console.log('Pinged your deployment. You successfully connected to MongoDB!');
